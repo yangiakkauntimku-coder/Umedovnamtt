@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Umedovna MTT — Admin panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --canvas:#150A34; --canvas-2:#1E0F46;
+    --violet:#8B5CF6; --violet-deep:#6D28D9;
+    --magenta:#EC4899; --amber:#FBBF24; --amber-deep:#D97706;
+    --mint:#34D399; --rose:#FB7185;
+    --ink:#FFFFFF; --ink-soft:rgba(255,255,255,.68); --ink-faint:rgba(255,255,255,.45);
+    --glass:rgba(255,255,255,.07); --glass-border:rgba(255,255,255,.16);
+    --radius:22px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 700px at 15% -10%, rgba(139,92,246,.4), transparent 60%),
+      radial-gradient(900px 700px at 110% 10%, rgba(236,72,153,.3), transparent 55%),
+      linear-gradient(180deg, var(--canvas), var(--canvas-2));
+    background-attachment:fixed;
+    color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;padding-bottom:80px;
+  }
+  h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  input,select,textarea{font-family:inherit;}
+
+  header.topbar{position:sticky;top:0;z-index:50;background:rgba(21,10,52,.55);backdrop-filter:blur(18px) saturate(160%);border-bottom:1px solid var(--glass-border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .brand-wrap{display:flex;align-items:center;gap:10px;}
+  .seal{width:36px;height:36px;border-radius:50%;background:conic-gradient(from 210deg, var(--amber), var(--violet), var(--magenta), var(--amber));display:flex;align-items:center;justify-content:center;position:relative;flex:none;box-shadow:0 0 18px rgba(251,191,36,.45);}
+  .seal::before{content:'U';font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;width:29px;height:29px;border-radius:50%;background:var(--canvas);display:flex;align-items:center;justify-content:center;}
+  .brand{font-size:19px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;}
+  .brand small{display:block;font-family:'Plus Jakarta Sans';font-weight:700;font-size:10px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px;}
+
+  .wrap{max-width:760px;margin:0 auto;padding:24px 20px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .glass{background:var(--glass);backdrop-filter:blur(24px) saturate(150%);border:1px solid var(--glass-border);border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.35);}
+
+  .auth-card{padding:30px 24px;margin-top:8px;max-width:420px;}
+  .auth-card h1{font-size:23px;margin:0 0 6px;font-weight:700;}
+  .auth-card p{margin:0 0 20px;color:var(--ink-soft);font-size:14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:7px;}
+  .field input, .field select, .field textarea{width:100%;padding:13px 14px;border:1.5px solid var(--glass-border);border-radius:12px;font-size:15px;background:rgba(0,0,0,.22);color:var(--ink);outline:none;}
+  .field input::placeholder{color:var(--ink-faint);}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.25);}
+  .field-row{display:flex;gap:12px;}
+  .field-row .field{flex:1;}
+  .checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:13px 14px;background:rgba(0,0,0,.18);border:1.5px solid var(--glass-border);border-radius:12px;}
+  .checkbox-row input{width:18px;height:18px;accent-color:var(--amber);}
+  .checkbox-row label{font-size:14px;font-weight:600;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:12px;font-weight:700;font-size:14.5px;transition:transform .12s, box-shadow .15s, opacity .15s;}
+  .btn:active{transform:scale(.97);}
+  .btn-block{width:100%;}
+  .btn-primary{background:linear-gradient(135deg,var(--violet),var(--magenta));color:#fff;box-shadow:0 8px 24px rgba(139,92,246,.4);}
+  .btn-gold{background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#2a1700;box-shadow:0 8px 24px rgba(251,191,36,.35);}
+  .btn-outline{background:rgba(255,255,255,.04);border:1.5px solid var(--glass-border);color:var(--ink);}
+  .btn-teal{background:linear-gradient(135deg,var(--mint),#059669);color:#04281c;}
+  .btn-danger{background:rgba(251,113,133,.12);border:1.5px solid rgba(251,113,133,.35);color:#ffc9d2;}
+  .btn-sm{padding:9px 13px;font-size:12.5px;border-radius:9px;}
+  .btn[disabled]{opacity:.5;pointer-events:none;}
+
+  .msg{font-size:13.5px;padding:11px 13px;border-radius:11px;margin-bottom:14px;display:none;border:1px solid transparent;}
+  .msg.error{display:block;background:rgba(251,113,133,.14);color:#ffc9d2;border-color:rgba(251,113,133,.3);}
+  .msg.ok{display:block;background:rgba(52,211,153,.14);color:#b7f5de;border-color:rgba(52,211,153,.3);}
+
+  .tabs{display:flex;gap:4px;background:rgba(0,0,0,.2);border:1px solid var(--glass-border);border-radius:13px;padding:4px;margin-bottom:22px;overflow-x:auto;}
+  .tab-btn{flex:1;white-space:nowrap;padding:11px 14px;border-radius:10px;background:transparent;font-weight:700;font-size:13px;color:var(--ink-faint);}
+  .tab-btn.active{background:linear-gradient(135deg,var(--violet),var(--magenta));color:#fff;box-shadow:0 4px 16px rgba(139,92,246,.4);}
+
+  .card{padding:22px;margin-bottom:18px;}
+  .card h2{font-size:17px;margin:0 0 4px;font-weight:700;}
+  .card .hint{color:var(--ink-soft);font-size:13px;margin:0 0 18px;line-height:1.5;}
+
+  .file-drop{border:2px dashed var(--glass-border);border-radius:14px;padding:26px;text-align:center;background:rgba(0,0,0,.15);cursor:pointer;transition:border-color .15s;}
+  .file-drop.has-file{border-color:var(--mint);background:rgba(52,211,153,.08);}
+  .file-drop p{margin:0;font-size:13.5px;color:var(--ink-soft);}
+  .file-drop strong{display:block;color:var(--ink);font-size:14.5px;margin-bottom:4px;}
+
+  .format-box{background:rgba(0,0,0,.25);border:1px solid var(--glass-border);border-radius:12px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;color:var(--ink-soft);white-space:pre-wrap;margin-bottom:14px;}
+
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;border:1px solid var(--glass-border);border-radius:14px;margin-bottom:10px;background:rgba(255,255,255,.03);gap:12px;}
+  .list-item .title{font-weight:700;font-size:14.5px;margin:0 0 5px;}
+  .list-item .meta{font-size:12px;color:var(--ink-soft);display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);color:var(--ink-soft);}
+  .chip.gold{background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#2a1700;border:none;}
+  .chip.teal{background:linear-gradient(135deg,var(--mint),#059669);color:#04281c;border:none;}
+  .row-actions{display:flex;gap:8px;flex:none;}
+
+  .empty{text-align:center;padding:32px 16px;color:var(--ink-soft);font-size:13.5px;border:1px dashed var(--glass-border);border-radius:var(--radius);}
+  .center-loading{display:flex;justify-content:center;padding:40px 0;color:var(--ink-soft);}
+  .spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .stat{padding:18px 12px;text-align:center;}
+  .stat b{display:block;font-size:26px;font-family:'Space Grotesk',sans-serif;background:linear-gradient(120deg,var(--amber),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .stat span{font-size:10.5px;color:var(--ink-faint);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+
+  #topRightAdmin{font-size:12px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-wrap">
+    <div class="seal"></div>
+    <div class="brand">Umedovna MTT<small>Admin panel</small></div>
+  </div>
+  <div id="topRightAdmin"></div>
+</header>
+
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <section class="screen active" id="screen-login">
+    <div class="glass auth-card">
+      <h1>Admin panelga kirish</h1>
+      <p>Faqat administrator huquqiga ega hisoblar kira oladi.</p>
+      <div id="msgLogin" class="msg"></div>
+      <form id="formAdminLogin">
+        <div class="field"><label>Telefon raqam</label><input type="tel" id="admPhone" required placeholder="+998 90 123 45 67"></div>
+        <div class="field"><label>Parol</label><input type="password" id="admPass" required></div>
+        <button class="btn btn-primary btn-block" type="submit" id="btnAdminLogin"><span>Kirish</span></button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ADMIN APP -->
+  <section class="screen" id="screen-app">
+
+    <div class="stat-grid">
+      <div class="glass stat"><b id="statTests">0</b><span>Testlar</span></div>
+      <div class="glass stat"><b id="statUsers">0</b><span>Foydalanuvchilar</span></div>
+      <div class="glass stat"><b id="statVip">0</b><span>VIP</span></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="upload">Test yuklash</button>
+      <button class="tab-btn" data-tab="tests">Testlar</button>
+      <button class="tab-btn" data-tab="users">Foydalanuvchilar</button>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div class="tab-panel" id="panel-upload">
+      <div class="glass card">
+        <h2>Yangi test qo'shish</h2>
+        <p class="hint">Savollarni bittalab kiritish shart emas — barcha savollarni bitta matn (.txt) faylga tayyorlab, shu yerga yuklang. Tizim faylni o'zi o'qib, hammasini bazaga kiritadi.</p>
+
+        <div id="msgUpload" class="msg"></div>
+
+        <div class="field"><label>Test nomi</label><input type="text" id="newTestTitle" placeholder="Masalan: Attestatsiya — 1-bosqich, Umumiy pedagogika" required></div>
+        <div class="field-row">
+          <div class="field"><label>Vaqt (daqiqa)</label><input type="number" id="newTestDuration" value="90" min="1" required></div>
+          <div class="field"><label>Savollar tartibi</label><select id="newTestOrder"><option value="file">Fayldagi tartibda</option></select></div>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="newTestVip">
+          <label for="newTestVip">Faqat VIP obunachilar uchun</label>
+        </div>
+
+        <div class="format-box">Savol matni?
+A) Birinchi variant
+B) Ikkinchi variant
+C) Uchinchi variant
+D) To'rtinchi variant
+Javob: A
+---
+Keyingi savol matni?
+A) ...
+B) ...
+C) ...
+D) ...
+Javob: C</div>
+
+        <div class="field-row" style="margin-bottom:16px">
+          <button class="btn btn-outline btn-sm" id="btnDownloadSample" type="button">Namuna faylni yuklab olish</button>
+        </div>
+
+        <input type="file" id="fileInput" accept=".txt" style="display:none">
+        <div class="file-drop" id="fileDrop">
+          <strong id="fileDropTitle">Faylni tanlang</strong>
+          <p id="fileDropSub">.txt formatidagi savollar faylini bosing va tanlang</p>
+        </div>
+
+        <div id="parsePreview"></div>
+
+        <div style="margin-top:18px">
+          <button class="btn btn-gold btn-block" id="btnUploadTest" disabled><span>Avval faylni tanlang</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TESTS TAB -->
+    <div class="tab-panel" id="panel-tests" style="display:none">
+      <div class="glass card">
+        <h2>Barcha testlar</h2>
+        <p class="hint">Testni o'chirsangiz, unga tegishli barcha savollar ham o'chib ketadi.</p>
+        <div id="testsAdminList"><div class="center-loading">Yuklanmoqda…</div></div>
+      </div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div class="tab-panel" id="panel-users" style="display:none">
+      <div class="glass card">
+        <h2>Foydalanuvchilar</h2>
+        <p class="hint">VIP obunani yoqish yoki o'chirish uchun tugmani bosing.</p>
+        <div id="usersList"><div class="center-loading">Yuklanmoqda…</div></div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline btn-block" id="btnAdminLogout" style="margin-top:8px">Chiqish</button>
+  </section>
+
+</div>
+
+<script>
+/* ================= SUPABASE CONFIG ================= */
+const SUPABASE_URL = "https://zjybykvjwoictuyplvgk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqeWJ5a3Zqd29pY3R1eXBsdmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDAxMzIsImV4cCI6MjEwMzUxNjEzMn0.3Wa3qqAsidpmwT4Qn4QQXpr3t9IVgOaqjn1s5-W4E-U";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let adminUser = null;
+let adminProfile = null;
+let parsedQuestions = [];
+let selectedFileName = '';
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
+function setBtnLoading(btn, loading, label){
+  if(loading){ btn.dataset.label = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true; }
+  else { btn.innerHTML = btn.dataset.label || label; btn.disabled = false; }
+}
+
+/* ================= LOGIN ================= */
+function phoneToInternalEmail(rawPhone){
+  const digits = rawPhone.replace(/\D/g, '');
+  return `mtt.p${digits}@gmail.com`;
+}
+
+document.getElementById('formAdminLogin').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('btnAdminLogin');
+  const phoneRaw = document.getElementById('admPhone').value.trim();
+  setBtnLoading(btn, true);
+  const email = phoneToInternalEmail(phoneRaw);
+  const password = document.getElementById('admPass').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    setBtnLoading(btn, false, 'Kirish');
+    showMsg('msgLogin', "Kirishda xatolik: raqam yoki parol noto'g'ri.", 'error');
+    return;
+  }
+  const { data:{ user } } = await sb.auth.getUser();
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  setBtnLoading(btn, false, 'Kirish');
+  if(!profile?.is_admin){
+    showMsg('msgLogin', "Bu hisob administrator emas. Kirish rad etildi.", 'error');
+    await sb.auth.signOut();
+    return;
+  }
+  adminUser = user; adminProfile = profile;
+  document.getElementById('topRightAdmin').textContent = profile.full_name || profile.phone || 'Admin';
+  showScreen('screen-app');
+  loadEverything();
+});
+
+document.getElementById('btnAdminLogout').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  adminUser = null; adminProfile = null;
+  showScreen('screen-login');
+});
+
+function showMsg(id, text, type){
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'msg ' + type;
+}
+
+/* ================= TABS ================= */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+    document.getElementById('panel-'+btn.dataset.tab).style.display='block';
+  });
+});
+
+/* ================= FILE PARSING ================= */
+function parseQuestionsFile(text){
+  text = text.replace(/\r\n/g, '\n').trim();
+  let blocks;
+  if(/\n\s*-{3,}\s*\n/.test(text) || /^-{3,}\s*$/m.test(text)){
+    blocks = text.split(/\n\s*-{3,}\s*\n?/g);
+  } else {
+    blocks = text.split(/\n\s*\n(?=\S)/g);
+  }
+  const results = [];
+  const errors = [];
+  blocks.forEach((raw, idx)=>{
+    const block = raw.trim();
+    if(!block) return;
+    const lines = block.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length < 6){ errors.push(`Blok ${idx+1}: format to'liq emas (savol + 4 variant + javob kerak).`); return; }
+
+    let questionLines = [];
+    let opts = {A:null,B:null,C:null,D:null};
+    let correct = null;
+    let i = 0;
+    const optRegex = /^([A-Da-d])[\)\.\:]\s*(.+)$/;
+    while(i < lines.length && !optRegex.test(lines[i]) && !/^javob/i.test(lines[i])){
+      questionLines.push(lines[i]); i++;
+    }
+    for(; i < lines.length; i++){
+      const m = lines[i].match(optRegex);
+      if(m){ opts[m[1].toUpperCase()] = m[2].trim(); continue; }
+      const jm = lines[i].match(/^javob\s*[:\-]?\s*([A-Da-d])/i);
+      if(jm){ correct = jm[1].toUpperCase(); }
+    }
+    const questionText = questionLines.join(' ').trim();
+    if(!questionText || !opts.A || !opts.B || !opts.C || !opts.D || !correct){
+      errors.push(`Blok ${idx+1}: to'liq o'qib bo'lmadi — savol, 4 variant yoki javob yetishmayapti.`);
+      return;
+    }
+    results.push({
+      question_text: questionText,
+      option_a: opts.A, option_b: opts.B, option_c: opts.C, option_d: opts.D,
+      correct_option: correct,
+      order_index: results.length
+    });
+  });
+  return { results, errors };
+}
+
+document.getElementById('btnDownloadSample').addEventListener('click', ()=>{
+  const sample = `Bola shaxsini rivojlantirishda yetakchi faoliyat turi qaysi?
+A) O'qish faoliyati
+B) O'yin faoliyati
+C) Mehnat faoliyati
+D) Sport faoliyati
+Javob: B
+---
+Maktabgacha ta'lim tashkilotida bolalar necha guruhga bo'linadi?
+A) Yosh xususiyatiga ko'ra
+B) Bo'yiga ko'ra
+C) Ismiga ko'ra
+D) Kelish vaqtiga ko'ra
+Javob: A`;
+  const blob = new Blob([sample], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'namuna-savollar.txt';
+  a.click();
+});
+
+const fileDrop = document.getElementById('fileDrop');
+const fileInput = document.getElementById('fileInput');
+fileDrop.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async ()=>{
+  const file = fileInput.files[0];
+  if(!file) return;
+  selectedFileName = file.name;
+  const text = await file.text();
+  const { results, errors } = parseQuestionsFile(text);
+  parsedQuestions = results;
+
+  fileDrop.classList.add('has-file');
+  document.getElementById('fileDropTitle').textContent = file.name;
+  document.getElementById('fileDropSub').textContent = `${results.length} ta savol topildi${errors.length? ', ' + errors.length + ' ta blokda xatolik':''}`;
+
+  const previewEl = document.getElementById('parsePreview');
+  if(errors.length){
+    previewEl.innerHTML = `<div class="msg error" style="display:block">${errors.slice(0,5).map(escapeHtml).join('<br>')}</div>`;
+  } else {
+    previewEl.innerHTML = '';
+  }
+
+  const btn = document.getElementById('btnUploadTest');
+  if(results.length > 0){
+    btn.disabled = false;
+    btn.innerHTML = `<span>${results.length} ta savolni yuklash</span>`;
+  } else {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Faylda savol topilmadi</span>';
+  }
+});
+
+document.getElementById('btnUploadTest').addEventListener('click', async ()=>{
+  const title = document.getElementById('newTestTitle').value.trim();
+  const duration = parseInt(document.getElementById('newTestDuration').value, 10) || 90;
+  const isVip = document.getElementById('newTestVip').checked;
+  if(!title){ showMsg('msgUpload', 'Iltimos, test nomini kiriting.', 'error'); return; }
+  if(parsedQuestions.length === 0){ showMsg('msgUpload', 'Avval savollar faylini yuklang.', 'error'); return; }
+
+  const btn = document.getElementById('btnUploadTest');
+  setBtnLoading(btn, true);
+
+  const { data: test, error: testErr } = await sb.from('tests').insert({
+    title, duration_minutes: duration, is_vip: isVip
+  }).select().single();
+
+  if(testErr){
+    setBtnLoading(btn, false, 'Qayta urinish');
+    showMsg('msgUpload', "Test yaratishda xatolik: " + testErr.message, 'error');
+    return;
+  }
+
+  const rows = parsedQuestions.map(q => ({ ...q, test_id: test.id }));
+  const { error: qErr } = await sb.from('questions').insert(rows);
+
+  setBtnLoading(btn, false, 'Yuklash');
+  if(qErr){
+    showMsg('msgUpload', "Savollarni saqlashda xatolik: " + qErr.message, 'error');
+    return;
+  }
+
+  showMsg('msgUpload', `"${title}" testi ${rows.length} ta savol bilan muvaffaqiyatli yuklandi!`, 'ok');
+  document.getElementById('newTestTitle').value = '';
+  document.getElementById('newTestVip').checked = false;
+  fileInput.value = '';
+  parsedQuestions = [];
+  fileDrop.classList.remove('has-file');
+  document.getElementById('fileDropTitle').textContent = 'Faylni tanlang';
+  document.getElementById('fileDropSub').textContent = '.txt formatidagi savollar faylini bosing va tanlang';
+  document.getElementById('parsePreview').innerHTML = '';
+  btn.disabled = true;
+  btn.innerHTML = '<span>Avval faylni tanlang</span>';
+  loadTestsAdmin();
+  loadStats();
+});
+
+/* ================= TESTS LIST ================= */
+async function loadTestsAdmin(){
+  const el = document.getElementById('testsAdminList');
+  el.innerHTML = '<div class="center-loading">Yuklanmoqda…</div>';
+  const { data: tests } = await sb.from('tests').select('*').order('created_at', {ascending:false});
+  const { data: qCounts } = await sb.from('questions').select('test_id');
+  const countMap = {};
+  (qCounts||[]).forEach(q => countMap[q.test_id] = (countMap[q.test_id]||0)+1);
+
+  if(!tests || tests.length===0){ el.innerHTML = '<div class="empty">Hali test qo\'shilmagan.</div>'; return; }
+  el.innerHTML = '';
+  tests.forEach(t=>{
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      <div>
+        <p class="title">${escapeHtml(t.title)}</p>
+        <div class="meta">
+          <span class="chip">${t.duration_minutes} daq</span>
+          <span class="chip">${countMap[t.id]||0} savol</span>
+          ${t.is_vip ? '<span class="chip gold">VIP</span>' : '<span class="chip">Oddiy</span>'}
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-danger btn-sm" data-id="${t.id}">O'chirish</button>
+      </div>
+    `;
+    div.querySelector('.btn-danger').addEventListener('click', async ()=>{
+      if(!confirm(`"${t.title}" testini butunlay o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`)) return;
+      await sb.from('tests').delete().eq('id', t.id);
+      loadTestsAdmin(); loadStats();
+    });
+    el.appendChild(div);
+  });
+}
+
+/* ================= USERS LIST ================= */
+async function loadUsers(){
+  const el = document.getElementById('usersList');
+  el.innerHTML = '<div class="center-loading">Yuklanmoqda…</div>';
+  const { data: users } = await sb.from('profiles').select('*').order('created_at', {ascending:false});
+  if(!users || users.length===0){ el.innerHTML = '<div class="empty">Foydalanuvchilar yo\'q.</div>'; return; }
+  el.innerHTML = '';
+  users.forEach(u=>{
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+      <div>
+        <p class="title">${escapeHtml(u.full_name || 'Ism kiritilmagan')}</p>
+        <div class="meta">
+          <span class="chip">${escapeHtml(u.phone || 'Telefon yo\'q')}</span>
+          ${u.is_admin ? '<span class="chip teal">Admin</span>' : ''}
+          ${u.is_vip ? '<span class="chip gold">VIP</span>' : ''}
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="btn ${u.is_vip ? 'btn-outline' : 'btn-gold'} btn-sm" data-id="${u.id}" data-vip="${u.is_vip}">
+          ${u.is_vip ? 'VIP olib tashlash' : 'VIP berish'}
+        </button>
+      </div>
+    `;
+    div.querySelector('button').addEventListener('click', async (e)=>{
+      const newVal = !(e.target.dataset.vip === 'true');
+      await sb.from('profiles').update({ is_vip: newVal }).eq('id', u.id);
+      loadUsers(); loadStats();
+    });
+    el.appendChild(div);
+  });
+}
+
+/* ================= STATS ================= */
+async function loadStats(){
+  const { count: testCount } = await sb.from('tests').select('*', { count:'exact', head:true });
+  const { count: userCount } = await sb.from('profiles').select('*', { count:'exact', head:true });
+  const { count: vipCount } = await sb.from('profiles').select('*', { count:'exact', head:true }).eq('is_vip', true);
+  document.getElementById('statTests').textContent = testCount ?? 0;
+  document.getElementById('statUsers').textContent = userCount ?? 0;
+  document.getElementById('statVip').textContent = vipCount ?? 0;
+}
+
+function loadEverything(){
+  loadStats();
+  loadTestsAdmin();
+  loadUsers();
+}
+
+/* ================= INIT ================= */
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    const { data:{ user } } = await sb.auth.getUser();
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if(profile?.is_admin){
+      adminUser = user; adminProfile = profile;
+      document.getElementById('topRightAdmin').textContent = profile.full_name || profile.phone || 'Admin';
+      showScreen('screen-app');
+      loadEverything();
+      return;
+    }
+  }
+  showScreen('screen-login');
+})();
+</script>
+</body>
+</html>

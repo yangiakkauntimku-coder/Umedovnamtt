@@ -2,13 +2,13 @@
 //  UMEDOVNA MTT — Telegram bot webhook (Vercel Serverless Function)
 //  Bu fayl /api/webhook.js yo'lida turishi kerak.
 //
-//  Pastki menyuda 3 ta tugma bo'ladi:
-//   🎓 Test ishlash        -> saytni Mini App sifatida ochadi
+//  Pastki menyuda 2 ta tugma bo'ladi (Test ishlash BotFather orqali
+//  sozlangan chap tomondagi doimiy Menu Button orqali ochiladi,
+//  shuning uchun bu yerda takrorlanmaydi):
 //   🔥 VIP obuna            -> obuna haqida matn bilan javob beradi
 //   ℹ️ Ma'lumot va yordam   -> platforma haqida qisqa ma'lumot beradi
 // ============================================================
 
-const SITE_URL = "https://umedovnamtt.vercel.app";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // -------- O'ZGARTIRISHINGIZ MUMKIN BO'LGAN MATNLAR --------
@@ -28,7 +28,6 @@ const INFO_TEXT =
 
 const MAIN_MENU = {
   keyboard: [
-    [{ text: "🎓 Test ishlash", web_app: { url: SITE_URL } }],
     [{ text: "🔥 VIP obuna" }, { text: "ℹ️ Ma'lumot va yordam" }],
   ],
   resize_keyboard: true,
@@ -79,7 +78,8 @@ export default async function handler(req, res) {
           `Assalomu alaykum${firstName ? ", " + firstName : ""}! 👋\n\n` +
             `Umedovna MTT — attestatsiyaga tayyorlanayotgan tarbiyachilar uchun test platformasi.\n\n` +
             `📢 Diqqat: saytdan foydalanish uchun avval @maktabgachaHub kanaliga a'zo bo'lishingiz kerak.\n\n` +
-            `Pastdagi menyudan foydalaning 👇`
+            `🎓 Test ishlash uchun yozish maydoni yonidagi tugmani bosing.\n` +
+            `Qolgan savollar uchun pastdagi menyudan foydalaning 👇`
         );
       } else if (text.includes("VIP")) {
         await sendMessage(chatId, VIP_TEXT);

@@ -106,6 +106,11 @@
   }
   .field input::placeholder{color:var(--ink-faint);}
   .field input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.14);background:#fff;}
+  .field select{
+    width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;
+    font-size:15px;background:var(--bg);color:var(--ink);outline:none;transition:border-color .15s, box-shadow .15s;
+  }
+  .field select:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.14);background:#fff;}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
     padding:14px 18px;border-radius:13px;font-weight:700;font-size:15px;width:100%;
@@ -239,6 +244,24 @@
   .hist-date{font-size:12px;color:var(--ink-faint);}
   .hist-score{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--violet-deep);}
 
+  /* ---- Rating ---- */
+  .rating-row{padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;}
+  .rating-row.me{border-color:var(--violet);background:var(--violet-soft);}
+  .rank-badge{
+    width:34px;height:34px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;
+    background:var(--bg-2);color:var(--ink-soft);
+  }
+  .rank-badge.gold{background:linear-gradient(135deg,#FFD966,#F59E0B);color:#fff;}
+  .rank-badge.silver{background:linear-gradient(135deg,#E2E8F0,#94A3B8);color:#fff;}
+  .rank-badge.bronze{background:linear-gradient(135deg,#E8B48A,#B45309);color:#fff;}
+  .rating-name{font-weight:700;font-size:14.5px;margin:0 0 2px;display:flex;align-items:center;gap:6px;}
+  .rating-sub{font-size:12px;color:var(--ink-faint);}
+  .rating-score{margin-left:auto;text-align:right;flex:none;}
+  .rating-score b{display:block;font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--violet-deep);}
+  .rating-score span{font-size:10.5px;color:var(--ink-faint);font-weight:700;text-transform:uppercase;}
+
   .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg)}}
   .center-loading{display:flex;justify-content:center;padding:60px 0;color:var(--ink-soft);}
@@ -357,6 +380,27 @@
     <button class="btn btn-gold" id="btnBackHome"><span>Testlar ro'yxatiga qaytish</span></button>
   </section>
 
+  <!-- RATING -->
+  <section class="screen" id="screen-rating">
+    <div class="section-title">Reyting</div>
+    <div class="tabs">
+      <button class="tab-btn active" data-ratingtab="overall">Umumiy</button>
+      <button class="tab-btn" data-ratingtab="bytest">Testlar bo'yicha</button>
+    </div>
+
+    <div id="ratingPanel-overall">
+      <div id="overallRatingList"><div class="center-loading">Yuklanmoqda…</div></div>
+    </div>
+
+    <div id="ratingPanel-bytest" style="display:none">
+      <div class="field" style="margin-bottom:16px">
+        <label>Testni tanlang</label>
+        <select id="ratingTestSelect"></select>
+      </div>
+      <div id="testRatingList"><div class="center-loading">Test tanlang…</div></div>
+    </div>
+  </section>
+
   <!-- PROFILE -->
   <section class="screen" id="screen-profile">
     <div class="section-title">Profil</div>
@@ -395,6 +439,10 @@
   <button data-nav="dashboard" class="active">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
     Testlar
+  </button>
+  <button data-nav="rating">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3M17 6h3a1 1 0 0 1 1 1v1a3 3 0 0 1-3 3"/></svg>
+    Reyting
   </button>
   <button data-nav="profile">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
@@ -438,9 +486,9 @@ function setBtnLoading(btn, loading, label){
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
 
 /* ================= AUTH TABS ================= */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
+document.querySelectorAll('#screen-auth .tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#screen-auth .tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('msgAuth').className = 'msg';
     if(btn.dataset.tab === 'login'){
@@ -452,6 +500,18 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     }
   });
 });
+
+/* ================= RATING TABS ================= */
+document.querySelectorAll('#screen-rating .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#screen-rating .tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const isOverall = btn.dataset.ratingtab === 'overall';
+    document.getElementById('ratingPanel-overall').style.display = isOverall ? 'block' : 'none';
+    document.getElementById('ratingPanel-bytest').style.display = isOverall ? 'none' : 'block';
+  });
+});
+
 
 function showAuthMsg(text, type){
   const el = document.getElementById('msgAuth');
@@ -531,6 +591,7 @@ sb.auth.onAuthStateChange((event)=>{
     currentUser = null; currentProfile = null;
     document.getElementById('bottomnav').style.display = 'none';
     document.getElementById('headerChip').innerHTML = '';
+    delete document.getElementById('ratingTestSelect').dataset.loaded;
     showScreen('screen-auth');
   }
 });
@@ -549,6 +610,7 @@ document.querySelectorAll('.bottomnav button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     setActiveNav(btn.dataset.nav);
     if(btn.dataset.nav === 'dashboard'){ showScreen('screen-dashboard'); loadTests(); }
+    else if(btn.dataset.nav === 'rating'){ showScreen('screen-rating'); loadOverallLeaderboard(); populateRatingTestSelect(); }
     else { showScreen('screen-profile'); loadProfileScreen(); }
   });
 });
@@ -710,6 +772,80 @@ async function finishExam(auto){
     ? `Vaqt tugadi. Siz ${total} savoldan ${correct} tasiga to'g'ri javob berdingiz.`
     : `Siz ${total} savoldan ${correct} tasiga to'g'ri javob berdingiz.`;
   showScreen('screen-result');
+}
+
+/* ================= RATING SCREEN ================= */
+function rankBadgeClass(rank){
+  if(rank===1) return 'rank-badge gold';
+  if(rank===2) return 'rank-badge silver';
+  if(rank===3) return 'rank-badge bronze';
+  return 'rank-badge';
+}
+
+async function loadOverallLeaderboard(){
+  const el = document.getElementById('overallRatingList');
+  el.innerHTML = '<div class="center-loading">Yuklanmoqda…</div>';
+  const { data, error } = await sb.rpc('get_overall_leaderboard');
+  if(error){ el.innerHTML = '<div class="empty">Reytingni yuklab bo\'lmadi.</div>'; return; }
+  if(!data || data.length===0){ el.innerHTML = '<div class="empty">Hali hech kim test topshirmagan.</div>'; return; }
+  el.innerHTML = '';
+  data.forEach((row, i)=>{
+    const rank = i+1;
+    const isMe = currentUser && row.user_id === currentUser.id;
+    const div = document.createElement('div');
+    div.className = 'card rating-row' + (isMe ? ' me' : '');
+    div.innerHTML = `
+      <div class="${rankBadgeClass(rank)}">${rank}</div>
+      <div>
+        <p class="rating-name">${escapeHtml(row.full_name || 'Foydalanuvchi')} ${row.is_vip ? '★' : ''}</p>
+        <p class="rating-sub">${row.tests_taken} ta test topshirgan</p>
+      </div>
+      <div class="rating-score"><b>${row.avg_pct ?? 0}%</b><span>o'rtacha</span></div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+async function populateRatingTestSelect(){
+  const select = document.getElementById('ratingTestSelect');
+  if(select.dataset.loaded === 'true') return;
+  const { data: tests } = await sb.from('tests').select('id,title').order('created_at', {ascending:false});
+  select.innerHTML = '<option value="">— Testni tanlang —</option>';
+  (tests||[]).forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.title;
+    select.appendChild(opt);
+  });
+  select.dataset.loaded = 'true';
+  select.addEventListener('change', ()=>{
+    if(select.value) loadTestLeaderboard(select.value);
+    else document.getElementById('testRatingList').innerHTML = '<div class="center-loading">Test tanlang…</div>';
+  });
+}
+
+async function loadTestLeaderboard(testId){
+  const el = document.getElementById('testRatingList');
+  el.innerHTML = '<div class="center-loading">Yuklanmoqda…</div>';
+  const { data, error } = await sb.rpc('get_test_leaderboard', { test_id_input: testId });
+  if(error){ el.innerHTML = '<div class="empty">Reytingni yuklab bo\'lmadi.</div>'; return; }
+  if(!data || data.length===0){ el.innerHTML = '<div class="empty">Bu testni hali hech kim topshirmagan.</div>'; return; }
+  el.innerHTML = '';
+  data.forEach((row, i)=>{
+    const rank = i+1;
+    const pct = Math.round((row.score/row.total)*100);
+    const isMe = currentUser && row.user_id === currentUser.id;
+    const div = document.createElement('div');
+    div.className = 'card rating-row' + (isMe ? ' me' : '');
+    div.innerHTML = `
+      <div class="${rankBadgeClass(rank)}">${rank}</div>
+      <div>
+        <p class="rating-name">${escapeHtml(row.full_name || 'Foydalanuvchi')} ${row.is_vip ? '★' : ''}</p>
+        <p class="rating-sub">${new Date(row.taken_at).toLocaleDateString('uz-UZ')}</p>
+      </div>
+      <div class="rating-score"><b>${row.score}/${row.total}</b><span>${pct}%</span></div>
+    `;
+    el.appendChild(div);
+  });
 }
 
 /* ================= PROFILE SCREEN ================= */

@@ -19,10 +19,10 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APP_SECRET = process.env.TELEGRAM_LOGIN_SECRET;
 
 // -------- O'ZGARTIRISHINGIZ MUMKIN BO'LGAN QATOR --------
-// Majburiy a'zolik so'raladigan kanal (@ belgisi bilan).
-// Botingiz shu kanalga ADMIN sifatida qo'shilgan bo'lishi shart,
+// Majburiy a'zolik so'raladigan kanallar ro'yxati (@ belgisi bilan).
+// Botingiz HAR BIR shu kanalga ADMIN sifatida qo'shilgan bo'lishi shart,
 // aks holda Telegram a'zolikni tekshirishga ruxsat bermaydi.
-const CHANNEL_USERNAME = "@maktabgachaHub";
+const CHANNELS = ["@maktabgachaHub", "@attestatsiya100natija"];
 // ------------------------------------------------------------
 
 function verifyTelegramInitData(initData) {
@@ -43,16 +43,16 @@ function verifyTelegramInitData(initData) {
   return computedHash === hash;
 }
 
-async function isChannelMember(tgId) {
+async function isChannelMember(tgId, channelUsername) {
   try {
     const resp = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(CHANNEL_USERNAME)}&user_id=${tgId}`
+      `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(channelUsername)}&user_id=${tgId}`
     );
     const data = await resp.json();
     if (!data.ok) {
       // Bot kanalga admin qilib qo'shilmagan yoki boshqa sozlash xatosi.
       // Bunday holda foydalanuvchini bloklamaymiz (fail-open), lekin logga yozamiz.
-      console.error("getChatMember xatoligi (bot kanalga admin qilib qo'shilganmi tekshiring):", data);
+      console.error(`getChatMember xatoligi (${channelUsername} — bot admin qilib qo'shilganmi tekshiring):`, data);
       return true;
     }
     const status = data.result?.status;
@@ -61,6 +61,15 @@ async function isChannelMember(tgId) {
     console.error("Kanal a'zoligini tekshirishda xatolik:", err);
     return true; // tarmoq xatosida ham bloklamaymiz
   }
+}
+
+async function getMissingChannels(tgId) {
+  const missing = [];
+  for (const ch of CHANNELS) {
+    const ok = await isChannelMember(tgId, ch);
+    if (!ok) missing.push(ch);
+  }
+  return missing;
 }
 
 export default async function handler(req, res) {
@@ -94,11 +103,14 @@ export default async function handler(req, res) {
     const tgUser = JSON.parse(userJson);
     const tgId = tgUser.id;
 
-    const subscribed = await isChannelMember(tgId);
-    if (!subscribed) {
+    const missingChannels = await getMissingChannels(tgId);
+    if (missingChannels.length > 0) {
       res.status(200).json({
         subscribed: false,
-        channelUrl: `https://t.me/${CHANNEL_USERNAME.replace("@", "")}`,
+        channels: missingChannels.map((ch) => ({
+          username: ch,
+          url: `https://t.me/${ch.replace("@", "")}`,
+        })),
       });
       return;
     }

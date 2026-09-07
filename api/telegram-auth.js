@@ -22,7 +22,7 @@ const APP_SECRET = process.env.TELEGRAM_LOGIN_SECRET;
 // Majburiy a'zolik so'raladigan kanallar ro'yxati (@ belgisi bilan).
 // Botingiz HAR BIR shu kanalga ADMIN sifatida qo'shilgan bo'lishi shart,
 // aks holda Telegram a'zolikni tekshirishga ruxsat bermaydi.
-const CHANNELS = ["@maktabgachaHub", "@attestatsiya100natija"];
+const CHANNELS = ["@maktabgachaHub", "@DMTT_Pedagoglar"];
 // ------------------------------------------------------------
 
 function verifyTelegramInitData(initData) {

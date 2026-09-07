@@ -300,10 +300,10 @@
   <section class="screen" id="screen-channel-gate">
     <div class="gate-wrap">
       <div class="gate-icon">📢</div>
-      <h2>Avval kanalga a'zo bo'ling</h2>
-      <p>Platformadan foydalanish uchun avval "Maktabgacha Hub" Telegram kanaliga a'zo bo'lishingiz kerak. A'zo bo'lgach, pastdagi tugmani bosing.</p>
-      <div class="gate-actions">
-        <button class="btn btn-primary" id="btnOpenChannel">📢 Kanalga o'tish</button>
+      <h2>Avval kanallarga a'zo bo'ling</h2>
+      <p>Platformadan foydalanish uchun quyidagi Telegram kanallariga a'zo bo'lishingiz kerak. A'zo bo'lgach, pastdagi tugmani bosing.</p>
+      <div class="gate-actions" id="channelButtons"></div>
+      <div class="gate-actions" style="margin-top:10px">
         <button class="btn btn-teal" id="btnRecheckChannel"><span>✅ A'zo bo'ldim, tekshirish</span></button>
       </div>
     </div>
@@ -884,16 +884,24 @@ async function loadProfileScreen(){
 }
 
 /* ================= TELEGRAM MINI APP — KANAL TEKSHIRUVI + AVTOMATIK KIRISH ================= */
-function getTelegramChannelUrl(){
-  return CHANNEL_FALLBACK_URL;
-}
-
-document.getElementById('btnOpenChannel').addEventListener('click', ()=>{
-  const url = getTelegramChannelUrl();
+function openChannelLink(url){
   const tg = window.Telegram?.WebApp;
   if(tg && tg.openTelegramLink){ tg.openTelegramLink(url); }
   else { window.open(url, '_blank'); }
-});
+}
+
+function renderChannelGate(channels){
+  const wrap = document.getElementById('channelButtons');
+  wrap.innerHTML = '';
+  const list = (channels && channels.length) ? channels : [{ username: '@maktabgachaHub', url: CHANNEL_FALLBACK_URL }];
+  list.forEach(ch=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = `📢 ${ch.username} kanaliga o'tish`;
+    btn.addEventListener('click', ()=> openChannelLink(ch.url));
+    wrap.appendChild(btn);
+  });
+}
 
 document.getElementById('btnRecheckChannel').addEventListener('click', async (e)=>{
   const btn = e.currentTarget;
@@ -918,6 +926,7 @@ async function tryTelegramAutoLogin(){
     const data = await resp.json();
 
     if(data.subscribed === false){
+      renderChannelGate(data.channels);
       showScreen('screen-channel-gate');
       return true;
     }

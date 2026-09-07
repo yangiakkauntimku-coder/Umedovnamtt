@@ -103,7 +103,7 @@ export default async function handler(req, res) {
           chatId,
           `Assalomu alaykum${firstName ? ", " + firstName : ""}! 👋\n\n` +
             `Umedovna MTT — attestatsiyaga tayyorlanayotgan tarbiyachilar uchun test platformasi.\n\n` +
-            `📢 Diqqat: saytdan foydalanish uchun avval @maktabgachaHub va @attestatsiya100natija kanallariga a'zo bo'lishingiz kerak.\n\n` +
+            `📢 Diqqat: saytdan foydalanish uchun avval @maktabgachaHub va @DMTT_Pedagoglar kanallariga a'zo bo'lishingiz kerak.\n\n` +
             `🎓 Test ishlash uchun yozish maydoni yonidagi tugmani bosing.\n` +
             `Qolgan savollar uchun pastdagi menyudan foydalaning 👇`
         );
